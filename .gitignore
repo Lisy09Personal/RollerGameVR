@@ -1,3 +1,4 @@
 build
 fooScript
 Temp
+./*.sh
