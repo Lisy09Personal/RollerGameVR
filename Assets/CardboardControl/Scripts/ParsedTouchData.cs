@@ -8,7 +8,7 @@ namespace CardboardControll {
 	public class ParsedTouchData {
 		// 
 		private bool wasTouched = false;
-		
+
 		public ParsedTouchData() {
 			// TODO: may need to change the type "Cardboard" when Google API changes
 			Cardboard cardboard = CardboardGameObject().GetComponent<Cardboard>();
