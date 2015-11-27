@@ -43,7 +43,8 @@ namespace CardboardControll {
 		public bool StillDown() {
 			return Input.touchCount > 0;
 		}
-		
+
+		// TODO: may re-implement this with UniRx by checking the time stream IsDown->!StillDown
 		public bool IsUp() {
 			if (!StillDown() && wasTouched) {
 				wasTouched = false;
