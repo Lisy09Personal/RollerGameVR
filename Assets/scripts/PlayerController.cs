@@ -2,7 +2,7 @@
 using System.Collections;
 using UnityEngine.UI;
 
-public class PlayerController : MonoBehaviour {
+public class playercontroller : MonoBehaviour {
 	private Rigidbody rb;
 	public float speed;
 	private int count;
@@ -10,9 +10,6 @@ public class PlayerController : MonoBehaviour {
 	public Text winTextLeft;
 	public Text winTextRight;
 	public GameObject camera;
-
-	// may put this in other places
-	private int winCount = 7;
 
 	void Start(){
 		rb = GetComponent<Rigidbody> ();
@@ -34,17 +31,18 @@ public class PlayerController : MonoBehaviour {
 		Debug.Log ("collision:"+other.gameObject.tag );
 		if (other.gameObject.CompareTag ("pickup")) {
 			other.gameObject.SetActive(false) ;
-			count++;
-			setCount(count);
+			setCount(++count);
 		}
 	}
 
 	void setCount(int val) {
 		count = val;
-		countText.text = "Count: " + count.ToString();
-		if (val >= winCount) {
+		countText.text = "Count: "+count.ToString();
+		if (val >= 1) {
 			winTextLeft.text = "You Win!";
 			winTextRight.text = "You Win!";
 		}
 	}
 }
+//Destroy (other.gameObject);
+// if (other.gameObject.CompareTag("Player") )
