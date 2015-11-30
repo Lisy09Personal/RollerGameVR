@@ -95,11 +95,11 @@ namespace CardboardControll {
 			isStable = CheckStability();
 			if (!isStable) {
 				ResetState();
-			} else {
-				if (newTriggerState != TriggerState.Neutral && triggerState != newTriggerState) {
-					isDown = !isDown;
-					triggerState = newTriggerState;
-				}
+			} 
+
+			if (isStable && newTriggerState != TriggerState.Neutral && triggerState != newTriggerState) {
+				isDown = !isDown;
+				triggerState = newTriggerState;
 			}
 		}
 

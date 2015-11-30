@@ -95,8 +95,11 @@ namespace CardboardControll {
 		}
 		
 		private void CheckMagnet() {
-			if (magnet.IsDown()) ReportDown();
-			if (magnet.IsUp()) ReportUp();
+			if (magnet.IsDown ()) {
+				ReportDown ();
+			} else if (magnet.IsUp()) {
+				ReportUp();
+			}
 		}
 		
 		private void CheckTouch() {
