@@ -1,31 +1,60 @@
 using UnityEngine;
 using System.Collections;
 using CardboardControlDelegates;
+using System;
 
 namespace CardboardControll {
 	/// <summary>
-	/// Creating a vision raycast and handling the data from it
-	/// Relies on Google Cardboard SDK API's
+	/// Provide APIs for the magnet trigger by the ParsedMagnetData&ParsedTouchData classes (check the compass directly).
 	/// </summary>
-	public class CardboardControlTrigger : MonoBehaviour {
-
-		
-		
+	public class Trigger : MonoBehaviour {
 		public float clickSpeedThreshold = 0.4f;
 		public bool vibrateOnDown = false;
 		public bool vibrateOnUp = false;
 		public bool vibrateOnClick = true;
 		public KeyCode triggerKey = KeyCode.Space;
+		public bool printDebugInfo = false;
 		
 		private ParsedMagnetData magnet;
 		private ParsedTouchData touch;
 		private enum TriggerState { Up, Down }
 		private TriggerState currentTriggerState = TriggerState.Up;
 		private float clickStartTime = 0f;
-		
-		public CardboardControlDelegate OnUp = delegate {};
-		public CardboardControlDelegate OnDown = delegate {};
-		public CardboardControlDelegate OnClick = delegate {};
+
+		private int debugThrottle = 0;
+		private int FRAMES_PER_DEBUG = 5;
+
+		public event Action OnUp;
+		public event Action OnDown;
+		public event Action OnClick;
+
+		private static Trigger instance = null;
+		public static Trigger Instance
+		{
+			get
+			{
+				if (instance == null) {
+					instance = UnityEngine.Object.FindObjectOfType<Trigger>();
+				}
+				return instance;
+			}
+		}
+
+		void Awake() {
+			if (instance == null) {
+				instance = this;
+			}
+			if (instance != this) {
+				Debug.LogWarning("CardboardControll object should be a singleton.");
+				enabled = false;
+				return;
+			}
+			#if UNITY_IOS
+			Application.targetFrameRate = 60;
+			#endif
+			// Prevent the screen from dimming / sleeping
+			Screen.sleepTimeout = SleepTimeout.NeverSleep;
+		}
 		
 		public void Start() {
 			magnet = new ParsedMagnetData();
@@ -38,6 +67,12 @@ namespace CardboardControll {
 			CheckTouch();
 			CheckMagnet();
 			CheckKey();
+		}
+
+		public void FixedUpdate() {
+			if (printDebugInfo) {
+				PrintDebug();
+			}
 		}
 		
 		private bool KeyFor(string direction) {
@@ -52,8 +87,11 @@ namespace CardboardControll {
 		}
 		
 		private void CheckKey() {
-			if (KeyFor("down")) ReportDown();
-			if (KeyFor("up")) ReportUp();
+			if (KeyFor ("down")) {
+				ReportDown ();
+			} else if (KeyFor ("up")) {
+				ReportUp ();
+			}
 		}
 		
 		private void CheckMagnet() {
@@ -73,8 +111,12 @@ namespace CardboardControll {
 		private void ReportDown() {
 			if (currentTriggerState == TriggerState.Up) {
 				currentTriggerState = TriggerState.Down;
-				OnDown(this);
-				if (vibrateOnDown) Handheld.Vibrate();
+				if (OnDown != null) {
+					OnDown();
+				}
+				if (vibrateOnDown) {
+					Handheld.Vibrate();
+				}
 				clickStartTime = Time.time;
 			}
 		}
@@ -82,8 +124,12 @@ namespace CardboardControll {
 		private void ReportUp() {
 			if (currentTriggerState == TriggerState.Down) {
 				currentTriggerState = TriggerState.Up;
-				OnUp(this);
-				if (vibrateOnUp) Handheld.Vibrate();
+				if (OnUp!= null) {
+					OnUp();
+				}
+				if (vibrateOnUp) {
+					Handheld.Vibrate();
+				}
 				CheckForClick();
 			}
 		}
@@ -91,12 +137,18 @@ namespace CardboardControll {
 		private void CheckForClick() {
 			bool withinClickThreshold = SecondsHeld() <= clickSpeedThreshold;
 			clickStartTime = 0f;
-			if (withinClickThreshold) ReportClick();
+			if (withinClickThreshold) {
+				ReportClick ();
+			}
 		}
 		
 		private void ReportClick() {
-			OnClick(this);
-			if (vibrateOnClick) Handheld.Vibrate();
+			if (OnClick != null) {
+				OnClick ();
+			}
+			if (vibrateOnClick) {
+				Handheld.Vibrate ();
+			}
 		}
 		
 		public float SecondsHeld() {
@@ -129,6 +181,15 @@ namespace CardboardControll {
 			chart += "Trigger State: ";
 			chart += IsHeld() ? "down" : "up";
 			return chart;
+		}
+
+		private void PrintDebug() {
+			debugThrottle++;
+			if (debugThrottle >= FRAMES_PER_DEBUG) {
+				magnet.PrintDebug();
+				touch.PrintDebug();
+				debugThrottle = 0;
+			}
 		}
 	}
 

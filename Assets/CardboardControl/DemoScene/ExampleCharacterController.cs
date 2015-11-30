@@ -15,7 +15,7 @@ public class ExampleCharacterController : MonoBehaviour {
     */
     cardboard = GameObject.Find("CardboardControlManager").GetComponent<CardboardControl>();
     cardboard.trigger.OnDown += CardboardDown;  // When the trigger goes down
-    cardboard.trigger.OnUp += CardboardUp;      // When the trigger comes back up
+	cardboard.trigger.OnUp += CardboardUp;      // When the trigger comes back up
 
     // When the magnet or touch goes down and up within the "click threshold" time
     // That click speed threshold is configurable in the inspector
@@ -35,17 +35,17 @@ public class ExampleCharacterController : MonoBehaviour {
   /*
   * In this demo, we randomize object colours for triggered events
   */
-  public void CardboardDown(object sender) {
+  public void CardboardDown() {
     Debug.Log("Trigger went down");
     ChangeObjectColor("SphereDown");
   }
 
-  public void CardboardUp(object sender) {
+  public void CardboardUp() {
     Debug.Log("Trigger came up");
     ChangeObjectColor("SphereUp");
   }
 
-  public void CardboardClick(object sender) {
+  public void CardboardClick() {
     ChangeObjectColor("SphereClick");
 
     TextMesh textMesh = GameObject.Find("SphereClick/Counter").GetComponent<TextMesh>();
@@ -101,8 +101,8 @@ public class ExampleCharacterController : MonoBehaviour {
   */
   void OnDestroy() {
     cardboard.trigger.OnDown -= CardboardDown;
-    cardboard.trigger.OnUp -= CardboardUp;
-    cardboard.trigger.OnClick -= CardboardClick;
+	cardboard.trigger.OnUp -= CardboardUp;
+	cardboard.trigger.OnClick -= CardboardClick;
     cardboard.gaze.OnChange -= CardboardFocus;
   }
 }

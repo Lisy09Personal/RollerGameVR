@@ -12,7 +12,7 @@ namespace CardboardControll {
 */
 public class CardboardControl : MonoBehaviour {
   [HideInInspector]
-  public CardboardControlTrigger trigger;
+  public Trigger trigger;
   [HideInInspector]
   public CardboardControlGaze gaze;
   [HideInInspector]
@@ -21,13 +21,15 @@ public class CardboardControl : MonoBehaviour {
   public bool debugChartsEnabled = false;
 
   public void Awake() {
-    trigger = gameObject.GetComponent<CardboardControlTrigger>();
+    trigger = Trigger.Instance;
     gaze = gameObject.GetComponent<CardboardControlGaze>();
     box = gameObject.GetComponent<CardboardControlBox>();
   }
 
   public void Update() {
-    if (debugChartsEnabled) PrintDebugCharts();
+    if (debugChartsEnabled) {
+		PrintDebugCharts ();
+	}
   }
 
   public void PrintDebugCharts() {
