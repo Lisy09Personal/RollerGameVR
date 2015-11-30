@@ -5,6 +5,7 @@ using System.Collections.Generic;
 namespace CardboardControll {
 	/// <summary>
 	/// Dealing with raw magnet input from a Cardboard device.
+	/// Using Input.compass API of Unity.
 	/// Now only support two position state for the magnet swtich.
 	/// May suppurt sth likt GearVR Touchpad later?
 	/// </summary>
@@ -50,34 +51,35 @@ namespace CardboardControll {
 			}
 		}
 
-		/// the two state now of the magnet swtich
+		/// The two state now of the magnet swtich.
 		private struct MagnetWindowState {
-			public float firstHalf;
-			public float lastHalf;
-			// TODO: only need this?
+			/// Approximates how still the device is over time
 			public float ratio; 
+			/// Approximates how fast the device is moving relative to the magnet
+			public float delta;
 		}
 
 		private List<MagnetMoment> magnetWindow;
 		private MagnetWindowState currentMagnetWindow;
-		private const float MAX_WINDOW_SECONDS = 0.2f;
-		private const float MAGNET_RATIO_MIN_THRESHOLD = 0.05f;
-		private float MAGNET_RATIO_MAX_THRESHOLD = 0.1f;
-		private float CALIBRATION_SECONDS = 1f;
-		private float MAGNITUDE_THRESHOLD = 150.0f;
+		// TODO: these parameters may need adjustment
+		private float MAX_WINDOW_SECONDS = 0.1f;
+		private float MAGNET_RATIO_MIN_THRESHOLD = 0.03f;
+		private float MAGNET_RATIO_MAX_THRESHOLD = 0.2f;
+		private float MAGNET_MAGNITUDE_THRESHOLD = 200.0f;
+		private float STABLE_RATIO_THRESHOLD = 0.001f;
+		private float STABLE_DELTA_THRESHOLD = 2.0f;
 		private float windowLength = 0.0f;
 		
 		enum TriggerState {
 			Negative,
 			Neutral,
-			Postive
+			Positive
 		};
-		private bool wasTriggering = false;
 		private TriggerState triggerState = TriggerState.Neutral;
 		private bool isDown = false;
+		private bool isStable = false;
 		
 		// TODO: things get messed up when you insert the device into the magnet cardboard for the first time!
-		
 		public ParsedMagnetData() {
 			Input.compass.enabled = true;
 			magnetWindow = new List<MagnetMoment>();
@@ -89,35 +91,22 @@ namespace CardboardControll {
 			AddToMagnetWindow();
 			currentMagnetWindow = CaptureMagnetWindow();
 			
-			TriggerState newTriggerState = GetTriggerState();
-			// Debug.Log(Input.compass.rawVector.magnitude + "\n" + newTriggerState + "\n" + triggerState);
-			
-			if (newTriggerState != TriggerState.Neutral && triggerState != newTriggerState) {
-				isDown = !isDown;
-				triggerState = newTriggerState;
+			TriggerState newTriggerState = CheckTriggerState();
+			isStable = CheckStability();
+			if (!isStable) {
+				ResetState();
+			} else {
+				if (newTriggerState != TriggerState.Neutral && triggerState != newTriggerState) {
+					isDown = !isDown;
+					triggerState = newTriggerState;
+				}
 			}
 		}
-		private TriggerState GetTriggerState() {
-			if (Time.time < CALIBRATION_SECONDS) return TriggerState.Neutral;
-			if (Input.compass.rawVector.magnitude < MAGNITUDE_THRESHOLD) {
-				triggerState = TriggerState.Neutral;
-				return TriggerState.Neutral;
-			}
-			if (IsNegative()) return TriggerState.Negative;
-			if (IsPositive()) return TriggerState.Postive;
-			return TriggerState.Neutral;
-		}
-		
-		private bool IsNegative() {
-			return (currentMagnetWindow.ratio < 1f-MAGNET_RATIO_MIN_THRESHOLD &&
-			        currentMagnetWindow.ratio > 1f-MAGNET_RATIO_MAX_THRESHOLD);
-		}
-		
-		private bool IsPositive() {
-			return (currentMagnetWindow.ratio > 1f+MAGNET_RATIO_MIN_THRESHOLD &&
-			        currentMagnetWindow.ratio < 1f+MAGNET_RATIO_MAX_THRESHOLD);
-		}
-		
+
+		/// <summary>
+		/// Trims the magnet window from the head until its length <= MAX_WINDOW_SECONDS.
+		/// Note that if the last window's deltatime > MAX_WINDOW_SECONDS, the window may be cleared.
+		/// </summary>
 		public void TrimMagnetWindow() {
 			while (windowLength > MAX_WINDOW_SECONDS) {
 				MagnetMoment moment = magnetWindow[0];
@@ -125,30 +114,100 @@ namespace CardboardControll {
 				windowLength -= moment.deltaTime;
 			}
 		}
-		
+
+		/// <summary>
+		/// Adds to magnet window.
+		/// </summary>
 		public void AddToMagnetWindow() {
 			magnetWindow.Add(new MagnetMoment(Time.deltaTime, Input.compass.rawVector.magnitude));
 			windowLength += Time.deltaTime;
 		}
-		
+
+		// -- private methods --
+
+		/// <summary>
+		/// Captures current magnet state by checking the magnet window.
+		/// Note that the tail of the window is always updated by AddToMagnetWindow().
+		/// The ratio of Current State = AverageYMagnitude(firstHalf) / AverageYMagnitude(lastHalf).
+		/// </summary>
+		/// <returns>The current magnet window.</returns>
 		private MagnetWindowState CaptureMagnetWindow() {
 			MagnetWindowState newState = new MagnetWindowState();
-			int middle = magnetWindow.Count / 2;
-			List<MagnetMoment> firstHalf = magnetWindow.GetRange(0, middle);
-			List<MagnetMoment> lastHalf = magnetWindow.GetRange(middle, magnetWindow.Count - middle);
-			newState.firstHalf = Average(firstHalf);
-			newState.lastHalf = Average(lastHalf);
-			newState.ratio = newState.firstHalf / newState.lastHalf;
+			int midIndex = magnetWindow.Count / 2;
+			List<MagnetMoment> firstHalf = magnetWindow.GetRange(0, midIndex);
+			// lastHalf has at least one member and its yMagnitude should be > 0!
+			List<MagnetMoment> lastHalf = magnetWindow.GetRange(midIndex, magnetWindow.Count - midIndex);
+			newState.ratio = AverageYMagnitude(firstHalf) / AverageYMagnitude(lastHalf);
+			newState.delta = Mathf.Abs(magnetWindow[magnetWindow.Count-1].yMagnitude 
+			                           - magnetWindow[0].yMagnitude);
+			
 			return newState;
 		}
-		
-		private float Average(List<MagnetMoment> moments) {
-			if (moments.Count == 0) return 0.0f;
+
+		private float AverageYMagnitude(List<MagnetMoment> moments) {
+			if (moments.Count == 0) 
+				return 0.0f;
 			float sum = 0.0f;
 			for (int index = 0; index < moments.Count; index++) {
 				sum += moments[index].yMagnitude;
 			}
 			return sum / moments.Count;
+		}
+
+		/// <summary>
+		/// Checks the state of the trigger.
+		/// </summary>
+		/// <returns>The trigger state.</returns>
+		private TriggerState CheckTriggerState() {
+			if (IsNegative ()) {
+				return TriggerState.Negative;
+			} else if (IsPositive ()) {
+				return TriggerState.Positive;
+			} else {
+				return TriggerState.Neutral;
+			}
+		}
+
+		/// <summary>
+		/// Checks the stability.
+		/// </summary>
+		/// <returns>isStable</returns>
+		private bool CheckStability() {
+			if (MagnetAbsent ()) {
+				return false;
+			} else if (currentMagnetWindow.delta < STABLE_DELTA_THRESHOLD &&
+			           currentMagnetWindow.ratio < 1f + STABLE_RATIO_THRESHOLD &&
+			           currentMagnetWindow.ratio > 1f - STABLE_RATIO_THRESHOLD) {
+				return true;
+			} else {
+				return isStable;
+			}
+		}
+
+		/// <summary>
+		/// Whether other magnets are absent.
+		/// </summary>
+		/// <returns>In the absence of a stronger magnet, it will measure the Earth's filed.</returns>
+		private bool MagnetAbsent() {
+			return Input.compass.rawVector.magnitude < MAGNET_MAGNITUDE_THRESHOLD;
+		}
+
+		/// <summary>
+		/// true if yMagnitude of the firstHalf < that of the lastHalf & the value in certain region
+		/// </summary>
+		/// <returns></returns>
+		private bool IsNegative() {
+			return (currentMagnetWindow.ratio < 1f-MAGNET_RATIO_MIN_THRESHOLD &&
+			        currentMagnetWindow.ratio > 1f-MAGNET_RATIO_MAX_THRESHOLD);
+		}
+
+		/// <summary>
+		/// true if yMagnitude of the firstHalf ? that of the lastHalf & the value in certain region
+		/// </summary>
+		/// <returns></returns>
+		private bool IsPositive() {
+			return (currentMagnetWindow.ratio > 1f+MAGNET_RATIO_MIN_THRESHOLD &&
+			        currentMagnetWindow.ratio < 1f+MAGNET_RATIO_MAX_THRESHOLD);
 		}
 		
 		private bool IsMagnetGoingDown(float min, float max, float start) {
@@ -163,6 +222,19 @@ namespace CardboardControll {
 		
 		public bool IsUp() {
 			return triggerState != TriggerState.Neutral && !isDown;
+		}
+
+		public void ResetState() {
+			triggerState = TriggerState.Neutral;
+			isDown = false;
+		}
+
+		public void PrintDebug() {
+			Debug.Log("--- Magnetometer\nmagnitude: " + Input.compass.rawVector.magnitude +
+			          "\nratio: " + currentMagnetWindow.ratio +
+			          "\ndelta: " + currentMagnetWindow.delta + 
+			          "\nstable: " + isStable +
+			          "\nstate: " + triggerState);
 		}
 	}
 }
