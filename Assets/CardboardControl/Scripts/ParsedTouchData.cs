@@ -6,7 +6,7 @@ namespace CardboardControll {
 	/// Dealing with raw touch input from a Cardboard device
 	/// </summary>
 	public class ParsedTouchData {
-		// 
+		//
 		private bool wasTouched = false;
 
 		public ParsedTouchData() {
@@ -19,7 +19,7 @@ namespace CardboardControll {
 		/// <summary>
 		/// Get the game object of Cardboard. Note that the camera is placed as Player.CardboardMain.Head.MainCamera
 		/// </summary>
-		/// <returns>The game object.</returns>
+		/// <returns>The game object holding CardboardMain.</returns>
 		private GameObject CardboardGameObject() {
 			GameObject mainCamera = Camera.main.gameObject;
 			return mainCamera.transform.parent.parent.gameObject;
@@ -31,7 +31,7 @@ namespace CardboardControll {
 		}
 
 		/// <summary>
-		/// ouchCount can jump for no reason in a Cardboard
+		/// TouchCount can jump for no reason in a Cardboard
 		/// but it's too quick to be considered "Moved"
 		/// </summary>
 		/// <returns>whether Mouse/Touch is down</returns> 
@@ -52,6 +52,13 @@ namespace CardboardControll {
 			}
 			return false;
 		}
-	}
+
+		/// <summary>
+		/// Prints the debug. Remove later
+		/// </summary>
+		public void PrintDebug() {
+			Debug.Log("--- Touch\ncount: " + Input.touchCount + 
+			          "\ntouched: " + wasTouched);
+		}
 
 }
