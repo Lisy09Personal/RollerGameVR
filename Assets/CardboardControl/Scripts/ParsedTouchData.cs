@@ -3,7 +3,8 @@ using System.Collections;
 
 namespace CardboardControll {
 	/// <summary>
-	/// Dealing with raw touch input from a Cardboard device
+	/// Dealing with raw touch input from a Cardboard device.
+	/// Provide APIs: IsDown(), StillDown(), IsUp()
 	/// </summary>
 	public class ParsedTouchData {
 		//
@@ -41,12 +42,12 @@ namespace CardboardControll {
 
 		// TODO: may re-implement this with UniRx
 		public bool StillDown() {
-			return Input.touchCount > 0;
+			return (wasTouched && Input.touchCount > 0);
 		}
 
 		// TODO: may re-implement this with UniRx by checking the time stream IsDown->!StillDown
 		public bool IsUp() {
-			if (!StillDown() && wasTouched) {
+			if (wasTouched && !StillDown()) {
 				wasTouched = false;
 				return true;
 			}
@@ -60,5 +61,5 @@ namespace CardboardControll {
 			Debug.Log("--- Touch\ncount: " + Input.touchCount + 
 			          "\ntouched: " + wasTouched);
 		}
-
+	}
 }
