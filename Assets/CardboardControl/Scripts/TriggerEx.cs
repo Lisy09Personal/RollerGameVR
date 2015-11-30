@@ -7,7 +7,7 @@ namespace CardboardControll {
 	/// Extension for Cardboard Magnet Trigger using UniRx.
 	/// More custom controll patterns.
 	/// </summary>
-	public class CardboardControlTriggerEx : MonoBehaviour {
+	public class TriggerEx : MonoBehaviour {
 		
 		// Use this for initialization
 		void Start () {
