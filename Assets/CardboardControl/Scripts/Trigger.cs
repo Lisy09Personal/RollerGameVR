@@ -70,9 +70,8 @@ namespace CardboardControll {
 			CheckTouch();
 			CheckMagnet();
 			CheckKey();
-		}
 
-		public void FixedUpdate() {
+
 			if (printDebugInfo) {
 				PrintDebug();
 			}

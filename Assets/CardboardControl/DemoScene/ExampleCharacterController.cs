@@ -18,6 +18,7 @@ public class ExampleCharacterController : MonoBehaviour {
 		cardboard.trigger.OnDown += CardboardDown;  // When the trigger goes down
 		cardboard.trigger.OnUp += CardboardUp;      // When the trigger comes back up
 		
+		cardboard.trigger.printDebugInfo = true;
 		// When the magnet or touch goes down and up within the "click threshold" time
 		// That click speed threshold is configurable in the inspector
 		cardboard.trigger.OnClick += CardboardClick;
@@ -111,7 +112,7 @@ public class ExampleCharacterController : MonoBehaviour {
 		}
 		GameObject objIsDown = GameObject.Find("SphereIsDown");
 		objIsDown.GetComponent<Renderer>().material.color = newColor;
-		
+
 	}
 	
 	/*
