@@ -10,37 +10,6 @@ namespace CardboardControll {
 	/// May suppurt sth likt GearVR Touchpad later?
 	/// </summary>
 	public class ParsedMagnetData {
-		/*
-		public void Dummy()
-		{
-			IObservable<bool> source;
-			var switchObservable = source.DistinctUntilChanged ();
-			var downObservable = switchObservable.Where (isDown => isDown);
-			var upObservable = switchObservable.Where (isDown => !isDown);
-
-			var duringDownObservable = source.SkipUntil(downObservable)
-				.TakeUntil(upObservable)
-				.Repeat();
-
-			var longPress2Seconds = downObservable.Delay(TimeSpan.FromSeconds(2f))
-				.TakeUntil(upObservable)
-				.Repeat();
-
-			var pressTime = source
-				.Timestamp()
-				.CombineLatest(
-					switchObservable.Timestamp(), 
-					(left, right) => new Timestamped<bool>(left.Value, left.Timestamp - right.Timestamp)
-				);
-
-
-			switchObservable
-				.Timestamp()
-				.Scan((prev, current) => new Timestamped<bool>(current.Value, current.Timestamp - prev.Timestamp))
-		}
-		*/
-
-
 		/// struct that handles deltaTime and y of the magnet switch
 		private struct MagnetMoment {
 			public float deltaTime;
@@ -108,7 +77,7 @@ namespace CardboardControll {
 		/// Note that if the last window's deltatime > MAX_WINDOW_SECONDS, the window may be cleared.
 		/// </summary>
 		public void TrimMagnetWindow() {
-			while (windowLength > MAX_WINDOW_SECONDS) {
+			while (windowLength > MAX_WINDOW_SECONDS && magnetWindow.Count > 1) {
 				MagnetMoment moment = magnetWindow[0];
 				magnetWindow.RemoveAt(0);
 				windowLength -= moment.deltaTime;
@@ -148,8 +117,8 @@ namespace CardboardControll {
 			if (moments.Count == 0) 
 				return 0.0f;
 			float sum = 0.0f;
-			for (int index = 0; index < moments.Count; index++) {
-				sum += moments[index].yMagnitude;
+			foreach (var moment in moments) {
+				sum += moment.yMagnitude;
 			}
 			return sum / moments.Count;
 		}

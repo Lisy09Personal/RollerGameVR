@@ -28,6 +28,11 @@ namespace CardboardControll {
 		public event Action OnDown;
 		public event Action OnClick;
 
+		[HideInInspector]
+		public bool IsUp { get {return magnet.IsUp();}}
+		[HideInInspector]
+		public bool IsDown { get {return magnet.IsDown();}}
+
 		private static Trigger instance = null;
 		public static Trigger Instance
 		{
@@ -49,11 +54,6 @@ namespace CardboardControll {
 				enabled = false;
 				return;
 			}
-			#if UNITY_IOS
-			Application.targetFrameRate = 60;
-			#endif
-			// Prevent the screen from dimming / sleeping
-			Screen.sleepTimeout = SleepTimeout.NeverSleep;
 		}
 		
 		public void Start() {
@@ -95,9 +95,13 @@ namespace CardboardControll {
 		}
 		
 		private void CheckMagnet() {
-			if (magnet.IsDown ()) {
+			if (currentTriggerState == TriggerState.Up 
+			    && magnet.IsDown ()) {
+				currentTriggerState = TriggerState.Down;
 				ReportDown ();
-			} else if (magnet.IsUp()) {
+			} else if (currentTriggerState == TriggerState.Down
+			           && magnet.IsUp()) {
+				currentTriggerState = TriggerState.Up;
 				ReportUp();
 			}
 		}
@@ -112,29 +116,23 @@ namespace CardboardControll {
 		}
 		
 		private void ReportDown() {
-			if (currentTriggerState == TriggerState.Up) {
-				currentTriggerState = TriggerState.Down;
-				if (OnDown != null) {
-					OnDown();
-				}
-				if (vibrateOnDown) {
-					Handheld.Vibrate();
-				}
-				clickStartTime = Time.time;
+			if (OnDown != null) {
+				OnDown();
 			}
+			if (vibrateOnDown) {
+				Handheld.Vibrate();
+			}
+			clickStartTime = Time.time;
 		}
 		
 		private void ReportUp() {
-			if (currentTriggerState == TriggerState.Down) {
-				currentTriggerState = TriggerState.Up;
-				if (OnUp!= null) {
-					OnUp();
-				}
-				if (vibrateOnUp) {
-					Handheld.Vibrate();
-				}
-				CheckForClick();
+			if (OnUp!= null) {
+				OnUp();
 			}
+			if (vibrateOnUp) {
+				Handheld.Vibrate();
+			}
+			CheckForClick ();
 		}
 		
 		private void CheckForClick() {

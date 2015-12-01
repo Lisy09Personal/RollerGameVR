@@ -24,11 +24,14 @@ public class CardboardControl : MonoBehaviour {
     trigger = Trigger.Instance;
     gaze = gameObject.GetComponent<CardboardControlGaze>();
     box = gameObject.GetComponent<CardboardControlBox>();
+			
+	// Prevent the screen from dimming / sleeping
+	Screen.sleepTimeout = SleepTimeout.NeverSleep;
   }
 
   public void Update() {
     if (debugChartsEnabled) {
-		PrintDebugCharts ();
+		PrintDebugCharts();
 	}
   }
 
