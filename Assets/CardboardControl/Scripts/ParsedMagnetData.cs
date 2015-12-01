@@ -77,7 +77,7 @@ namespace CardboardControll {
 		/// Note that if the last window's deltatime > MAX_WINDOW_SECONDS, the window may be cleared.
 		/// </summary>
 		public void TrimMagnetWindow() {
-			while (windowLength > MAX_WINDOW_SECONDS && magnetWindow.Count > 1) {
+			while (windowLength > MAX_WINDOW_SECONDS) {
 				MagnetMoment moment = magnetWindow[0];
 				magnetWindow.RemoveAt(0);
 				windowLength -= moment.deltaTime;
@@ -166,8 +166,12 @@ namespace CardboardControll {
 		/// </summary>
 		/// <returns></returns>
 		private bool IsNegative() {
-			return (currentMagnetWindow.ratio < 1f-MAGNET_RATIO_MIN_THRESHOLD &&
-			        currentMagnetWindow.ratio > 1f-MAGNET_RATIO_MAX_THRESHOLD);
+			if (currentMagnetWindow.ratio < 1f) {
+				return (1/currentMagnetWindow.ratio > 1f + MAGNET_RATIO_MIN_THRESHOLD
+				        && 1/currentMagnetWindow.ratio < 1f+MAGNET_RATIO_MAX_THRESHOLD);
+			} else {
+				return false;
+			}
 		}
 
 		/// <summary>
@@ -175,8 +179,12 @@ namespace CardboardControll {
 		/// </summary>
 		/// <returns></returns>
 		private bool IsPositive() {
-			return (currentMagnetWindow.ratio > 1f+MAGNET_RATIO_MIN_THRESHOLD &&
-			        currentMagnetWindow.ratio < 1f+MAGNET_RATIO_MAX_THRESHOLD);
+			if (currentMagnetWindow.ratio > 1f) {
+				return (currentMagnetWindow.ratio > 1f + MAGNET_RATIO_MIN_THRESHOLD
+				        && currentMagnetWindow.ratio < 1f+MAGNET_RATIO_MAX_THRESHOLD);
+			} else {
+				return false;
+			}
 		}
 		
 		private bool IsMagnetGoingDown(float min, float max, float start) {

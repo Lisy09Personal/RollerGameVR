@@ -59,7 +59,10 @@ namespace CardboardControll {
 		public void Start() {
 			magnet = new ParsedMagnetData();
 			touch = new ParsedTouchData();
+
+			Application.targetFrameRate = 60;
 		}
+
 		
 		public void Update() {
 			magnet.Update();
